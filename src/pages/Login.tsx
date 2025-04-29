@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,12 +24,25 @@ const Login = () => {
     rollNumber: "",
     name: "",
   });
+  const [touched, setTouched] = useState({
+    rollNumber: false,
+    name: false,
+  });
 
   const validate = () => {
     const newErrors = {
-      rollNumber: !formState.rollNumber ? "Roll number is required" : "",
-      name: !formState.name ? "Name is required" : 
-            /\d/.test(formState.name) ? "Name should not contain numbers" : "",
+      rollNumber: !formState.rollNumber.trim() 
+        ? "Roll number is required" 
+        : !/^[a-zA-Z0-9-]+$/.test(formState.rollNumber)
+          ? "Roll number should only contain letters, numbers, and hyphens"
+          : "",
+      name: !formState.name.trim() 
+        ? "Name is required" 
+        : /\d/.test(formState.name)
+          ? "Name should not contain numbers"
+          : formState.name.length < 3
+            ? "Name must be at least 3 characters"
+            : "",
     };
     
     setErrors(newErrors);
@@ -37,13 +52,19 @@ const Login = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
-    if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    validate();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({ rollNumber: true, name: true });
     
     if (!validate()) return;
     
@@ -85,39 +106,67 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="rollNumber">Roll Number</Label>
+              <Label htmlFor="rollNumber" className={errors.rollNumber && touched.rollNumber ? "text-destructive" : ""}>
+                Roll Number
+              </Label>
               <Input
                 id="rollNumber"
                 name="rollNumber"
                 placeholder="Enter your roll number"
                 value={formState.rollNumber}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 data-testid="roll-number-input"
                 disabled={isLoading}
-                className="transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                className={`transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent ${
+                  errors.rollNumber && touched.rollNumber ? "border-destructive" : ""
+                }`}
+                aria-invalid={!!(errors.rollNumber && touched.rollNumber)}
+                aria-describedby={errors.rollNumber && touched.rollNumber ? "roll-number-error" : undefined}
               />
-              {errors.rollNumber && (
-                <p className="error-text" data-testid="roll-number-error">
-                  {errors.rollNumber}
-                </p>
+              {errors.rollNumber && touched.rollNumber && (
+                <Alert variant="destructive" className="py-2 px-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription 
+                    className="text-sm ml-2 error-text" 
+                    id="roll-number-error"
+                    data-testid="roll-number-error"
+                  >
+                    {errors.rollNumber}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className={errors.name && touched.name ? "text-destructive" : ""}>
+                Full Name
+              </Label>
               <Input
                 id="name"
                 name="name"
                 placeholder="Enter your full name"
                 value={formState.name}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 data-testid="name-input"
                 disabled={isLoading}
-                className="transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                className={`transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent ${
+                  errors.name && touched.name ? "border-destructive" : ""
+                }`}
+                aria-invalid={!!(errors.name && touched.name)}
+                aria-describedby={errors.name && touched.name ? "name-error" : undefined}
               />
-              {errors.name && (
-                <p className="error-text" data-testid="name-error">
-                  {errors.name}
-                </p>
+              {errors.name && touched.name && (
+                <Alert variant="destructive" className="py-2 px-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription 
+                    className="text-sm ml-2 error-text" 
+                    id="name-error"
+                    data-testid="name-error"
+                  >
+                    {errors.name}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
             <Button

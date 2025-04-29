@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface FormFieldProps {
   field: FieldType;
@@ -16,16 +18,25 @@ interface FormFieldProps {
 }
 
 const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) => {
+  const [isTouched, setIsTouched] = useState(false);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setIsTouched(true);
     onChange(event.target.value);
   };
 
   const handleCheckboxChange = (checked: boolean) => {
+    setIsTouched(true);
     onChange(checked);
   };
 
   const handleSelectChange = (value: string) => {
+    setIsTouched(true);
     onChange(value);
+  };
+
+  const handleBlur = () => {
+    setIsTouched(true);
   };
 
   const renderField = () => {
@@ -40,8 +51,12 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
             placeholder={field.placeholder}
             value={value as string}
             onChange={handleChange}
+            onBlur={handleBlur}
             data-testid={field.dataTestId}
             maxLength={field.maxLength}
+            className={error ? "border-destructive" : ""}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${field.fieldId}-error` : undefined}
           />
         );
       case "textarea":
@@ -51,8 +66,12 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
             placeholder={field.placeholder}
             value={value as string}
             onChange={handleChange}
+            onBlur={handleBlur}
             data-testid={field.dataTestId}
             maxLength={field.maxLength}
+            className={error ? "border-destructive" : ""}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${field.fieldId}-error` : undefined}
           />
         );
       case "date":
@@ -62,7 +81,11 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
             type="date"
             value={value as string}
             onChange={handleChange}
+            onBlur={handleBlur}
             data-testid={field.dataTestId}
+            className={error ? "border-destructive" : ""}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${field.fieldId}-error` : undefined}
           />
         );
       case "dropdown":
@@ -70,8 +93,12 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
           <Select
             value={value as string}
             onValueChange={handleSelectChange}
+            onOpenChange={() => setIsTouched(true)}
           >
-            <SelectTrigger data-testid={field.dataTestId}>
+            <SelectTrigger 
+              data-testid={field.dataTestId} 
+              className={error ? "border-destructive" : ""}
+            >
               <SelectValue placeholder={field.placeholder || "Select an option"} />
             </SelectTrigger>
             <SelectContent>
@@ -100,6 +127,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
                   value={option.value}
                   id={`${field.fieldId}-${option.value}`}
                   data-testid={option.dataTestId}
+                  onBlur={handleBlur}
                 />
                 <Label htmlFor={`${field.fieldId}-${option.value}`}>{option.label}</Label>
               </div>
@@ -113,6 +141,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
               id={field.fieldId}
               checked={value as boolean}
               onCheckedChange={handleCheckboxChange}
+              onBlur={handleBlur}
               data-testid={field.dataTestId}
             />
             <Label htmlFor={field.fieldId}>{field.label}</Label>
@@ -126,13 +155,29 @@ const FormField: React.FC<FormFieldProps> = ({ field, value, onChange, error }) 
   return (
     <div className="space-y-2">
       {field.type !== "checkbox" && (
-        <Label htmlFor={field.fieldId}>
+        <Label htmlFor={field.fieldId} className={error ? "text-destructive" : ""}>
           {field.label}
           {field.required && <span className="text-destructive ml-1">*</span>}
         </Label>
       )}
       {renderField()}
-      {error && <p className="error-text" data-testid={`${field.dataTestId}-error`}>{error}</p>}
+      {error && isTouched && (
+        <Alert variant="destructive" className="py-2 px-3">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription 
+            className="text-sm ml-2 error-text" 
+            id={`${field.fieldId}-error`}
+            data-testid={`${field.dataTestId}-error`}
+          >
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+      {field.maxLength && field.type !== "checkbox" && field.type !== "radio" && field.type !== "dropdown" && (
+        <div className="text-xs text-muted-foreground text-right">
+          {value ? (value as string).length : 0}/{field.maxLength}
+        </div>
+      )}
     </div>
   );
 };
