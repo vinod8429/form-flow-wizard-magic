@@ -26,7 +26,8 @@ const Login = () => {
   const validate = () => {
     const newErrors = {
       rollNumber: !formState.rollNumber ? "Roll number is required" : "",
-      name: !formState.name ? "Name is required" : "",
+      name: !formState.name ? "Name is required" : 
+            /\d/.test(formState.name) ? "Name should not contain numbers" : "",
     };
     
     setErrors(newErrors);
@@ -74,9 +75,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-md shadow-lg card-hover animate-fade-in">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Student Portal</CardTitle>
+          <CardTitle className="text-2xl text-center wizard-section-title">Student Portal</CardTitle>
           <CardDescription className="text-center">
             Enter your details to continue
           </CardDescription>
@@ -93,6 +94,7 @@ const Login = () => {
                 onChange={handleChange}
                 data-testid="roll-number-input"
                 disabled={isLoading}
+                className="transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.rollNumber && (
                 <p className="error-text" data-testid="roll-number-error">
@@ -110,6 +112,7 @@ const Login = () => {
                 onChange={handleChange}
                 data-testid="name-input"
                 disabled={isLoading}
+                className="transition-all duration-300 focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               {errors.name && (
                 <p className="error-text" data-testid="name-error">
@@ -119,11 +122,13 @@ const Login = () => {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full btn-animated"
               disabled={isLoading}
               data-testid="login-button"
             >
-              {isLoading ? "Logging in..." : "Continue to Form"}
+              <span>
+                {isLoading ? "Logging in..." : "Continue to Form"}
+              </span>
             </Button>
           </form>
         </CardContent>

@@ -7,7 +7,7 @@ import { validateSection, isSectionValid } from "../utils/validation";
 import FormSection from "../components/FormSection";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 
 const FormWizard = () => {
   const {
@@ -23,6 +23,7 @@ const FormWizard = () => {
   } = useForm();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [animateSection, setAnimateSection] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,6 +52,15 @@ const FormWizard = () => {
     fetchFormData();
   }, [rollNumber]);
 
+  useEffect(() => {
+    // Reset animation state when section changes
+    setAnimateSection(false);
+    const timer = setTimeout(() => {
+      setAnimateSection(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [currentSection]);
+
   const handlePrevious = () => {
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
@@ -68,6 +78,13 @@ const FormWizard = () => {
       if (currentSection < formData.form.sections.length - 1) {
         setCurrentSection(currentSection + 1);
       }
+    } else {
+      // Shake effect through toast for validation errors
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors before proceeding.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -95,16 +112,23 @@ const FormWizard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg animate-pulse">Loading form data...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
+        <div className="text-center">
+          <p className="text-lg animate-pulse">Loading form data...</p>
+          <div className="mt-4 flex space-x-2 justify-center">
+            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }}></div>
+            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: "200ms" }}></div>
+            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: "400ms" }}></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!formData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>No form data available. Please try again.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
+        <p className="text-lg">No form data available. Please try again.</p>
       </div>
     );
   }
@@ -118,7 +142,7 @@ const FormWizard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10 py-8 px-4">
-      <div className="form-wizard-container">
+      <div className="form-wizard-container card-hover">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-primary">{form.formTitle}</h1>
           <p className="text-muted-foreground">
@@ -135,9 +159,13 @@ const FormWizard = () => {
               key={index}
               className={`wizard-indicator-dot ${
                 index === currentSection ? "active" : ""
-              }`}
+              } ${index < currentSection ? "bg-green-500" : ""}`}
               aria-label={`Section ${index + 1}`}
-            ></div>
+            >
+              {index < currentSection && (
+                <Check className="w-3 h-3 text-white absolute" />
+              )}
+            </div>
           ))}
         </div>
 
@@ -145,7 +173,7 @@ const FormWizard = () => {
           {form.sections.map((section, index) => (
             <div 
               key={section.sectionId}
-              style={{ display: index === currentSection ? "block" : "none" }}
+              className={`${index === currentSection ? (animateSection ? "wizard-section" : "opacity-0") : "hidden"}`}
             >
               <FormSection section={section} />
             </div>
@@ -157,31 +185,38 @@ const FormWizard = () => {
             variant="outline"
             onClick={handlePrevious}
             disabled={currentSection === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 btn-animated"
             data-testid="prev-button"
           >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
+            <span>
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </span>
           </Button>
 
           {isLastSection ? (
             <Button
               onClick={handleSubmit}
               disabled={!isCurrentSectionValid || isSubmitting}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 btn-animated bg-green-600 hover:bg-green-700"
               data-testid="submit-button"
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              <span>
+                {isSubmitting ? "Submitting..." : "Submit"}
+                <Check className="w-4 h-4 ml-1" />
+              </span>
             </Button>
           ) : (
             <Button
               onClick={handleNext}
               disabled={!isCurrentSectionValid}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 btn-animated"
               data-testid="next-button"
             >
-              Next
-              <ChevronRight className="w-4 h-4" />
+              <span>
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </span>
             </Button>
           )}
         </div>
